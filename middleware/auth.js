@@ -1,15 +1,22 @@
-const jwt = require("jsonwebtoken");
+const { UNDEFINED_TOKEN, INVALID_TOKEN } = require("../constants/response");
 
-const auth = (req, res, next) => {
-    try {        
-        let token = req.headers.authorization.split(' ')[1];    
-        const decode = jwt.verify(token, process.env.SECRET);
-        console.log(decode);
-        req.user = decode;
-        next();
-    } catch (err) {        
-        res.json({status : 201, message : 'Authentication Failed!', error : err});
+const user = require("../models/mysql/m_user");
+const sentryAuth = (req, res, next) => {
+    authKey = req.headers.droom_token;
+    if (!authKey) {        
+        return res.json(UNDEFINED_TOKEN).end();
     }
+
+    // Authenticate user
+    user.verify( {persist_code : authKey} ).then( (data) => {
+        if (data.length == 0) {
+            return res.json(INVALID_TOKEN).end();
+        } else {
+            next();
+        }
+    });
 }
 
-module.exports = auth;
+module.exports = {
+    sentryAuth
+}
